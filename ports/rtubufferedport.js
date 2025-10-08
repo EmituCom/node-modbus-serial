@@ -32,6 +32,7 @@ var RTUBufferedPort = function(path, options) {
   this._id = 0;
   this._cmd = 0;
   this._length = 0;
+  this._baudrate = options.baudRate;
 
   // create the SerialPort
   this._client = new SerialPort(path, options);
@@ -133,7 +134,7 @@ RTUBufferedPort.prototype.close = function(callback) {
  *
  * @param {Buffer} data
  */
-RTUBufferedPort.prototype.write = function(data) {
+RTUBufferedPort.prototype.write = async function(data) {
   if (data.length < MIN_DATA_LENGTH) {
     modbusSerialDebug("expected length of data is to small - minimum is " + MIN_DATA_LENGTH);
     return;
@@ -171,9 +172,16 @@ RTUBufferedPort.prototype.write = function(data) {
 
   // send buffer to slave
   // Set pin up.
+  const sleepTotal = (10 * data.length * 1000000) / this._baudrate;
   toggleGPIO(1);
-  this._client.write(data, function(_) {
+  await sleep(sleepTotal);
+  await sleep(1);
+
+  this._client.write(data, async function(_) {
+    await sleep(sleepTotal);
+    await sleep(1);
     toggleGPIO(0);
+    await sleep(5);
   });
   // Set pin down.
 
@@ -184,6 +192,10 @@ RTUBufferedPort.prototype.write = function(data) {
     functionCode: this._cmd
   });
 };
+
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 const toggleGPIO = (value) => {
   console.log('toggling pin to ...', value);
