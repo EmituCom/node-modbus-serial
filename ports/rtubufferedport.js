@@ -174,14 +174,8 @@ RTUBufferedPort.prototype.write = async function(data) {
   // Set pin up.
   const sleepTotal = (10 * data.length * 1000000) / this._baudrate;
   toggleGPIO(1);
-  await sleep(sleepTotal);
-  await sleep(1);
-
   this._client.write(data, async function(_) {
-    await sleep(sleepTotal);
-    await sleep(1);
     toggleGPIO(0);
-    await sleep(5);
   });
   // Set pin down.
 
@@ -205,6 +199,7 @@ const toggleGPIO = (value) => {
 
   line.setValue(value);
   console.log('pin toggled ...');
+  line.release();
 }
 
 /**
