@@ -172,11 +172,19 @@ RTUBufferedPort.prototype.write = async function(data) {
 
   // send buffer to slave
   // Set pin up.
-  const sleepTotal = (10 * data.length * 1000000) / this._baudrate;
+  const time = Math.ceil((data.length * 11 * 1000) / this._baudrate);
   toggleGPIO(1);
-  this._client.write(data, async function(_) {
-    toggleGPIO(0);
+  await sleep(2)
+
+  await new Promise((resolve, reject) => {
+    this._client.write(data, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
   });
+
+  await sleep(time);
+  toggleGPIO(0);
   // Set pin down.
 
   modbusSerialDebug({
