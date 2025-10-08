@@ -170,10 +170,14 @@ RTUBufferedPort.prototype.write = async function(data) {
       break;
   }
 
+  const chip = new Chip(0);
+  const line = chip.getLine(17);
+  line.requestOutputMode();
+
   // send buffer to slave
   // Set pin up.
   const time = Math.ceil((data.length * 11 * 1000) / this._baudrate);
-  toggleGPIO(1);
+  toggleGPIO(line, 1);
   await sleep(2)
 
   await new Promise((resolve, reject) => {
@@ -184,7 +188,8 @@ RTUBufferedPort.prototype.write = async function(data) {
   });
 
   await sleep(time);
-  toggleGPIO(0);
+  toggleGPIO(line, 0);
+  line.release();
   // Set pin down.
 
   modbusSerialDebug({
@@ -199,15 +204,10 @@ const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const toggleGPIO = (value) => {
+const toggleGPIO = (line, value) => {
   console.log('toggling pin to ...', value);
-  const chip = new Chip(0);
-  const line = chip.getLine(17);
-  line.requestOutputMode();
-
   line.setValue(value);
   console.log('pin toggled ...');
-  line.release();
 }
 
 /**
